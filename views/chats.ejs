@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chats</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header">
+        <div><h1>Chatting Group <%=roomName%></h1></div>
+        <div>
+            <form action="/logout" method="get">
+            <button>Logout</button>
+        </form>
+        </div>
+    </div>
+    <div class="messages">
+        <div class="typing-indicator" id="typingIndicator"></div>
+    </div>
+    <div class="msg-input">
+        <input id="enteredMessage" placeholder="Enter the message">
+        <button onclick="sendMessage()">Submit</button>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket=io();
+        const roomName="<%=roomName%>";
+        socket.emit("join-room", roomName);
+        socket.on("load-history",(msgArray)=>{
+            msgArray.forEach(({sender,message}) => {
+                const div=document.createElement("div");
+                div.textContent=`${sender}:${message}`;
+                div.classList.add("message","history");
+                messages.appendChild(div);
+                messages.scrollTop = messages.scrollHeight;
+                div.classList.add(sender === "<%=yourName%>" ? "" : "received");
+            });
+        })
+        const messages=document.querySelector(".messages");
+        const msgInput=document.querySelector("#enteredMessage");
+        msgInput.addEventListener("input",()=>{
+            socket.emit("typing",{roomName,senderId:socket.id});
+        })
+        function sendMessage(){
+            const message=msgInput.value.trim();
+            if(!message)return;
+            socket.emit("send-message",{msgInput:message,roomName,senderId:socket.id});
+            msgInput.value="";
+        }
+        socket.on("receive-message",({msgInput,senderId})=>{
+            console.log(`message recieved=${msgInput}`);
+            const div=document.createElement("div");
+            div.textContent=msgInput;
+            if(senderId==socket.id){
+                div.classList.add("message","sent");
+            }else{
+                div.classList.add("message","received");
+            }
+            messages.appendChild(div);
+        })
+        const typingIndicator = document.querySelector("#typingIndicator");
+
+let typingTimeout;
+socket.on("show-typing", ({senderId,userName}) => {
+    if (senderId === socket.id) return; 
+    // typingIndicator.textContent = `${senderId.substring(0,3)} is typing`;
+        typingIndicator.textContent = `${userName} is typing`;
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => {
+        typingIndicator.textContent = "";
+    }, 1500);
+});
+
+    </script>
+</body>
+</html>
