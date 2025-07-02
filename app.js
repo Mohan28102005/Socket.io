@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 mongoose.connect(process.env.MONGO_URL).then(() => console.log('Connected!')).catch((err)=>{
     console.log("error occured while connected to database");
 });
+const MongoStore = require('connect-mongo');
 const Message=require("./models/messageModel");
 const sessionMiddleware=session({
   secret: 'cat',
